@@ -7,6 +7,20 @@ import (
 	"github.com/jroimartin/gocui"
 )
 
+// Views
+const (
+	UrlEndpointView = "UrlEndpoint"
+	ParamsView      = "ParamsView"
+	// TODO: need to be implemented
+	ResponseBodyView = "ResponseBody"
+	HeadersView      = "Headers"
+)
+
+var AllViews = []string{
+	UrlEndpointView,
+	ParamsView,
+}
+
 func createUrlEndpointView(g *gocui.Gui, maxX int) error {
 	v, err := g.SetView("UrlEndpoint", 0, 0, maxX-1, 2)
 	if err != nil {
@@ -76,24 +90,23 @@ func keybindings(g *gocui.Gui) error {
 	if err := g.SetKeybinding("", gocui.KeyTab, gocui.ModNone, nextView); err != nil {
 		return err
 	}
+
 	return nil
 }
 
 func nextView(g *gocui.Gui, v *gocui.View) error {
 	currentView := g.CurrentView().Name()
-	// views := []string{"UrlEndpoint", "Params", "Results"}
-	views := []string{"UrlEndpoint", "Params"}
 
 	currentIdx := -1
-	for i, name := range views {
+	for i, name := range AllViews {
 		if name == currentView {
 			currentIdx = i
 			break
 		}
 	}
 
-	nextIdx := (currentIdx + 1) % len(views)
-	g.SetCurrentView(views[nextIdx])
+	nextIdx := (currentIdx + 1) % len(AllViews)
+	g.SetCurrentView(AllViews[nextIdx])
 	return nil
 }
 
