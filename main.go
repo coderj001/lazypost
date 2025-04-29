@@ -16,13 +16,17 @@ const (
 	HeadersView      = "Headers"
 )
 
-var AllViews = []string{
-	UrlEndpointView,
-	ParamsView,
-}
+var (
+	AllViews = []string{
+		UrlEndpointView,
+		ParamsView,
+		ResponseBodyView,
+	}
+	active = 0
+)
 
 func createUrlEndpointView(g *gocui.Gui, maxX int) error {
-	v, err := g.SetView("UrlEndpoint", 0, 0, maxX-1, 2)
+	v, err := g.SetView(UrlEndpointView, 0, 0, maxX-1, 2)
 	if err != nil {
 		if err != gocui.ErrUnknownView {
 			return err
@@ -37,7 +41,7 @@ func createUrlEndpointView(g *gocui.Gui, maxX int) error {
 		fmt.Fprintln(v, "https://httpbin.org/get")
 
 		// Make sure this view is initially focused
-		if _, err := g.SetCurrentView("UrlEndpoint"); err != nil {
+		if _, err := g.SetCurrentView(UrlEndpointView); err != nil {
 			return err
 		}
 	}
@@ -45,7 +49,8 @@ func createUrlEndpointView(g *gocui.Gui, maxX int) error {
 }
 
 func createParamsView(g *gocui.Gui, maxX, maxY int) error {
-	v, err := g.SetView("Params", 0, 3, maxX-1, maxY/2)
+	width2 := maxX / 3
+	v, err := g.SetView(ParamsView, 0, 3, width2-1, maxY-1)
 	if err != nil {
 		if err != gocui.ErrUnknownView {
 			return err
@@ -57,6 +62,24 @@ func createParamsView(g *gocui.Gui, maxX, maxY int) error {
 		v.Editor = gocui.DefaultEditor
 		v.SelFgColor = gocui.ColorWhite
 		fmt.Fprintln(v, "param1=value1\nparam2=value2")
+	}
+	return nil
+}
+
+func createResponseBodyView(g *gocui.Gui, maxX, maxY int) error {
+	width2 := maxX / 3
+	v, err := g.SetView(ResponseBodyView, width2, 3, maxX-1, maxY-1)
+	if err != nil {
+		if err != gocui.ErrUnknownView {
+			return err
+		}
+		v.Title = "(3)"
+		v.Wrap = true
+		v.Autoscroll = true
+		v.Editable = true
+		v.Editor = gocui.DefaultEditor
+		v.SelFgColor = gocui.ColorWhite
+		fmt.Fprintln(v, "ResponseBody")
 	}
 	return nil
 }
@@ -74,9 +97,15 @@ func layout(g *gocui.Gui) error {
 		return err
 	}
 
+	// ResponseBody view - right cover
+	if err := createResponseBodyView(g, maxX, maxY); err != nil {
+		return err
+	}
+
 	return nil
 }
 
+// Add keybindings here
 func keybindings(g *gocui.Gui) error {
 	if err := g.SetKeybinding("", gocui.KeyCtrlC, gocui.ModNone, quit); err != nil {
 		return err
@@ -93,6 +122,7 @@ func keybindings(g *gocui.Gui) error {
 
 	return nil
 }
+
 
 func nextView(g *gocui.Gui, v *gocui.View) error {
 	currentView := g.CurrentView().Name()
@@ -121,6 +151,10 @@ func main() {
 		log.Panicln(err)
 	}
 	defer g.Close()
+	
+	g.Highlight = true
+	g.Cursor = true
+	g.SelFgColor = gocui.ColorGreen
 
 	g.SetManagerFunc(layout)
 
