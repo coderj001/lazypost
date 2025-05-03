@@ -17,7 +17,7 @@ import (
 // Views
 const (
 	UrlEndpointView  = "UrlEndpoint"
-	ParamsView       = "ParamsView"
+	ParamsView       = "Params"
 	ResponseBodyView = "ResponseBody"
 	HeadersView      = "Headers"
 	MethodView       = "Method"
@@ -27,8 +27,8 @@ var (
 	AllViews = []string{
 		UrlEndpointView,
 		ParamsView,
-		ResponseBodyView,
 		HeadersView,
+		ResponseBodyView,
 	}
 	active        = 0
 	defaultURL    = "https://httpbin.org/get"
@@ -63,12 +63,12 @@ func createUrlEndpointView(g *gocui.Gui, maxX int) error {
 
 func createParamsView(g *gocui.Gui, maxX, maxY int) error {
 	width2 := maxX / 3
-	v, err := g.SetView(ParamsView, 0, 3, width2-1, maxY-1)
+	v, err := g.SetView(ParamsView, 0, 3, width2, maxY)
 	if err != nil {
 		if err != gocui.ErrUnknownView {
 			return err
 		}
-		v.Title = "(2)"
+		v.Title = "(2) Params"
 		v.Wrap = true
 		v.Autoscroll = true
 		v.Editable = true
@@ -80,8 +80,9 @@ func createParamsView(g *gocui.Gui, maxX, maxY int) error {
 }
 
 func createHeadersView(g *gocui.Gui, maxX, maxY int) error {
+	height1 := maxY / 2
 	width2 := maxX / 3
-	v, err := g.SetView(HeadersView, width2, 3, 2*width2-1, maxY-1)
+	v, err := g.SetView(HeadersView, 0, height1, 2*width2-1, maxY-1)
 	if err != nil {
 		if err != gocui.ErrUnknownView {
 			return err
@@ -141,8 +142,8 @@ func layout(g *gocui.Gui) error {
 	return nil
 }
 
-// Add keybindings here
-func keybindings(g *gocui.Gui) error {
+// Add initKeybindings here
+func initKeybindings(g *gocui.Gui) error {
 	if err := g.SetKeybinding("", gocui.KeyCtrlC, gocui.ModNone, quit); err != nil {
 		return err
 	}
@@ -384,7 +385,7 @@ func quit(g *gocui.Gui, v *gocui.View) error {
 }
 
 func main() {
-	g, err := gocui.NewGui(gocui.OutputNormal)
+	g, err := gocui.NewGui(gocui.Output256)
 	if err != nil {
 		log.Panicln(err)
 	}
@@ -397,7 +398,7 @@ func main() {
 	g.SetManagerFunc(layout)
 
 	//KeyBinding
-	if err := keybindings(g); err != nil {
+	if err := initKeybindings(g); err != nil {
 		log.Panicln(err)
 	}
 
