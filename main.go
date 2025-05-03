@@ -21,6 +21,7 @@ const (
 	ResponseBodyView = "ResponseBody"
 	HeadersView      = "Headers"
 	MethodView       = "Method"
+	FloatingView     = "floating"
 )
 
 var (
@@ -47,8 +48,8 @@ func createUrlEndpointView(g *gocui.Gui, maxX int) error {
 		v.Title = "(1) GET"
 		v.Wrap = true
 		v.Autoscroll = false
-		v.Editable = true
-		v.Editor = gocui.DefaultEditor
+		// v.Editable = true
+		// v.Editor = gocui.DefaultEditor
 		v.SelFgColor = gocui.ColorWhite
 		v.BgColor = gocui.ColorCyan
 		fmt.Fprintln(v, defaultURL)
@@ -116,6 +117,24 @@ func createResponseBodyView(g *gocui.Gui, maxX, maxY int) error {
 	return nil
 }
 
+func createFloatingEditorView(g *gocui.Gui, maxX, maxY int) (*gocui.View, error) {
+	v, err := g.SetView(FloatingView, maxX/2-20, maxY/2-3, maxX/2+20, maxY/2+3)
+	if err != nil {
+		if err != gocui.ErrUnknownView {
+			return nil, err
+		}
+		v.Title = " Edit Value "
+		v.Wrap = true
+		v.Autoscroll = false
+		v.Editable = true
+		v.Editor = gocui.DefaultEditor
+		v.SelFgColor = gocui.ColorWhite
+		v.BgColor = gocui.ColorCyan
+		v.Frame = true
+	}
+	return v, nil
+}
+
 func layout(g *gocui.Gui) error {
 	maxX, maxY := g.Size()
 
@@ -161,6 +180,11 @@ func initKeybindings(g *gocui.Gui) error {
 	if err := g.SetKeybinding("", gocui.KeyCtrlS, gocui.ModNone, sendRequest); err != nil {
 		return err
 	}
+
+	if err := g.SetKeybinding("", ':', gocui.ModNone, startEditor); err != nil {
+		return err
+	}
+
 	// Change HTTP method with Ctrl+M
 	if err := g.SetKeybinding("", gocui.KeyCtrlM, gocui.ModNone, switchMethod); err != nil {
 		return err
@@ -359,6 +383,40 @@ func sendRequest(g *gocui.Gui, v *gocui.View) error {
 	// Format and display the response
 	responseView.Clear()
 	fmt.Fprintln(responseView, formatResponse(resp, body))
+
+	return nil
+}
+
+func startEditor(g *gocui.Gui, v *gocui.View) error {
+	maxX, maxY := g.Size()
+	editorView, err := createFloatingEditorView(g, maxX, maxY)
+	if err != nil {
+		return err
+	}
+
+	currentView := g.CurrentView().Name()
+	
+	v.Editable = true
+	v.Editor = gocui.DefaultEditor
+	v.SelFgColor = gocui.ColorWhite
+	v.BgColor = gocui.ColorCyan
+
+	// Set the editor view's content to the current value of the item being edited
+	switch currentView {
+	case UrlEndpointView:
+		editorView.Clear()
+		fmt.Fprint(editorView, defaultURL)
+	}
+
+	g.SetCurrentView(FloatingView) //set focus
+
+	// Set up keybindings for the floating editor view
+	// if err := g.SetKeybinding(FloatingView, gocui.KeyEnter, gocui.ModNone, saveEditedValue); err != nil {
+	// 	return err
+	// }
+	// if err := g.SetKeybinding(FloatingView, gocui.KeyEsc, gocui.ModNone, cancelEdit); err != nil {
+	// 	return err
+	// }
 
 	return nil
 }
