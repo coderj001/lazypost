@@ -411,13 +411,65 @@ func startEditor(g *gocui.Gui, v *gocui.View) error {
 	g.SetCurrentView(FloatingView) //set focus
 
 	// Set up keybindings for the floating editor view
-	// if err := g.SetKeybinding(FloatingView, gocui.KeyEnter, gocui.ModNone, saveEditedValue); err != nil {
-	// 	return err
-	// }
-	// if err := g.SetKeybinding(FloatingView, gocui.KeyEsc, gocui.ModNone, cancelEdit); err != nil {
-	// 	return err
-	// }
+	if err := g.SetKeybinding(FloatingView, gocui.KeyEnter, gocui.ModNone, saveEditedValue); err != nil {
+		return err
+	}
+	if err := g.SetKeybinding(FloatingView, gocui.KeyEsc, gocui.ModNone, cancelEdit); err != nil {
+		return err
+	}
 
+	return nil
+}
+
+func saveEditedValue(g *gocui.Gui, v *gocui.View) error {
+	editedText := strings.TrimSpace(v.Buffer())
+	currentView := g.CurrentView().Name()
+
+	// Update the appropriate global variable based on editItem
+	switch currentView {
+	case "defaultURL":
+		defaultURL, _ = url.JoinPath("https://",editedText) // added https:// to make it work
+	}
+
+	// Update the UrlEndpointView with the new value
+	urlView, err := g.View(UrlEndpointView)
+	if err != nil {
+		return err
+	}
+	urlView.Clear()
+	fmt.Fprintln(urlView, defaultURL)
+
+	// Remove the floating editor view
+	if err := g.DeleteView(FloatingView); err != nil {
+		return err
+	}
+
+	// Remove the keybindings for the floating editor view
+	if err := g.DeleteKeybinding(FloatingView, gocui.KeyEnter, gocui.ModNone); err != nil {
+		return err
+	}
+	if err := g.DeleteKeybinding(FloatingView, gocui.KeyEsc, gocui.ModNone); err != nil {
+		return err
+	}
+
+	g.SetCurrentView(UrlEndpointView) // Set focus back to the UrlEndpointView
+	return nil
+}
+
+func cancelEdit(g *gocui.Gui, v *gocui.View) error {
+	// Remove the floating editor view
+	if err := g.DeleteView(FloatingView); err != nil {
+		return err
+	}
+		// Remove the keybindings for the floating editor view
+	if err := g.DeleteKeybinding(FloatingView, gocui.KeyEnter, gocui.ModNone); err != nil {
+		return err
+	}
+	if err := g.DeleteKeybinding(FloatingView, gocui.KeyEsc, gocui.ModNone); err != nil {
+		return err
+	}
+
+	g.SetCurrentView(UrlEndpointView) // Set focus back to the UrlEndpointView
 	return nil
 }
 
