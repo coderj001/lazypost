@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/coderj001/lazypost/config"
 	"github.com/jroimartin/gocui"
 )
 
@@ -161,33 +162,39 @@ func layout(g *gocui.Gui) error {
 	return nil
 }
 
-// Add initKeybindings here
 func initKeybindings(g *gocui.Gui) error {
-	if err := g.SetKeybinding("", gocui.KeyCtrlC, gocui.ModNone, quit); err != nil {
-		return err
+	cfg, err := config.LoadKeybindings()
+	if err != nil {
+		return fmt.Errorf("failed to load keybindings: %w", err)
 	}
 
-	if err := g.SetKeybinding("", 'q', gocui.ModNone, quit); err != nil {
-		return err
+	warnings := cfg.Validate()
+	for _, w := range warnings {
+		log.Printf("keybinding warning: %s", w)
 	}
 
-	// Set up Tab key to switch between views
-	if err := g.SetKeybinding("", gocui.KeyTab, gocui.ModNone, nextView); err != nil {
-		return err
+	bindings := map[string]func(*gocui.Gui, *gocui.View) error{
+		"quit":          quit,
+		"quit-alt":      quit,
+		"next-view":     nextView,
+		"send-request":  sendRequest,
+		"start-editor":  startEditor,
+		"switch-method": switchMethod,
 	}
 
-	// Send request with Ctrl+S
-	if err := g.SetKeybinding("", gocui.KeyCtrlS, gocui.ModNone, sendRequest); err != nil {
-		return err
-	}
-
-	if err := g.SetKeybinding("", ':', gocui.ModNone, startEditor); err != nil {
-		return err
-	}
-
-	// Change HTTP method with Ctrl+M
-	if err := g.SetKeybinding("", gocui.KeyCtrlM, gocui.ModNone, switchMethod); err != nil {
-		return err
+	for action, keyStr := range cfg.Keybindings {
+		handler, ok := bindings[action]
+		if !ok {
+			continue
+		}
+		key, mod, err := config.ParseKey(keyStr)
+		if err != nil {
+			log.Printf("skipping invalid keybinding %s: %v", action, err)
+			continue
+		}
+		if err := g.SetKeybinding("", key, mod, handler); err != nil {
+			return fmt.Errorf("failed to set keybinding for %s: %w", action, err)
+		}
 	}
 
 	return nil
@@ -395,7 +402,7 @@ func startEditor(g *gocui.Gui, v *gocui.View) error {
 	}
 
 	currentView := g.CurrentView().Name()
-	
+
 	v.Editable = true
 	v.Editor = gocui.DefaultEditor
 	v.SelFgColor = gocui.ColorWhite
@@ -428,7 +435,7 @@ func saveEditedValue(g *gocui.Gui, v *gocui.View) error {
 	// Update the appropriate global variable based on editItem
 	switch currentView {
 	case "defaultURL":
-		defaultURL, _ = url.JoinPath("https://",editedText) // added https:// to make it work
+		defaultURL, _ = url.JoinPath("https://", editedText) // added https:// to make it work
 	}
 
 	// Update the UrlEndpointView with the new value
@@ -461,7 +468,7 @@ func cancelEdit(g *gocui.Gui, v *gocui.View) error {
 	if err := g.DeleteView(FloatingView); err != nil {
 		return err
 	}
-		// Remove the keybindings for the floating editor view
+	// Remove the keybindings for the floating editor view
 	if err := g.DeleteKeybinding(FloatingView, gocui.KeyEnter, gocui.ModNone); err != nil {
 		return err
 	}
