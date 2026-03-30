@@ -1,0 +1,10 @@
+# LazyPost Keybindings Configuration
+# Copy this to ~/.config/lazypost/keybindings.yaml or ./keybindings.yaml
+
+keybindings:
+  quit: ctrl-c
+  quit-alt: q
+  next-view: tab
+  send-request: ctrl-s
+  start-editor: ':'
+  switch-method: ctrl-m
