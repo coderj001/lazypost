@@ -2,6 +2,7 @@ keybindings:
   quit: ctrl-c
   quit-alt: q
   next-view: tab
+  prev-view: '['
   send-request: ctrl-s
   start-editor: ':'
   switch-method: ctrl-m

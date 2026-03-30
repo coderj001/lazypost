@@ -41,6 +41,7 @@ func DefaultKeybindings() *KeybindingConfig {
 			"quit":          "ctrl-c",
 			"quit-alt":      "q",
 			"next-view":     "tab",
+			"prev-view":     "[",
 			"send-request":  "ctrl-s",
 			"start-editor":  ":",
 			"switch-method": "ctrl-m",
@@ -68,6 +69,10 @@ func ParseKey(keyStr string) (gocui.Key, gocui.Modifier, error) {
 		return 'q', gocui.ModNone, nil
 	case ":":
 		return ':', gocui.ModNone, nil
+	case "[":
+		return '[', gocui.ModNone, nil
+	case "]":
+		return ']', gocui.ModNone, nil
 	default:
 		return 0, 0, fmt.Errorf("unknown key: %s", keyStr)
 	}
@@ -83,6 +88,7 @@ var validActions = map[string]bool{
 	"quit":          true,
 	"quit-alt":      true,
 	"next-view":     true,
+	"prev-view":     true,
 	"send-request":  true,
 	"start-editor":  true,
 	"switch-method": true,

@@ -177,6 +177,7 @@ func initKeybindings(g *gocui.Gui) error {
 		"quit":          quit,
 		"quit-alt":      quit,
 		"next-view":     nextView,
+		"prev-view":     prevView,
 		"send-request":  sendRequest,
 		"start-editor":  startEditor,
 		"switch-method": switchMethod,
@@ -430,15 +431,13 @@ func startEditor(g *gocui.Gui, v *gocui.View) error {
 
 func saveEditedValue(g *gocui.Gui, v *gocui.View) error {
 	editedText := strings.TrimSpace(v.Buffer())
-	currentView := g.CurrentView().Name()
+	editorViewName := v.Name()
 
-	// Update the appropriate global variable based on editItem
-	switch currentView {
-	case "defaultURL":
-		defaultURL, _ = url.JoinPath("https://", editedText) // added https:// to make it work
+	switch editorViewName {
+	case FloatingView:
+		defaultURL, _ = url.JoinPath("https://", editedText)
 	}
 
-	// Update the UrlEndpointView with the new value
 	urlView, err := g.View(UrlEndpointView)
 	if err != nil {
 		return err
@@ -446,12 +445,6 @@ func saveEditedValue(g *gocui.Gui, v *gocui.View) error {
 	urlView.Clear()
 	fmt.Fprintln(urlView, defaultURL)
 
-	// Remove the floating editor view
-	if err := g.DeleteView(FloatingView); err != nil {
-		return err
-	}
-
-	// Remove the keybindings for the floating editor view
 	if err := g.DeleteKeybinding(FloatingView, gocui.KeyEnter, gocui.ModNone); err != nil {
 		return err
 	}
@@ -459,16 +452,15 @@ func saveEditedValue(g *gocui.Gui, v *gocui.View) error {
 		return err
 	}
 
-	g.SetCurrentView(UrlEndpointView) // Set focus back to the UrlEndpointView
+	if err := g.DeleteView(FloatingView); err != nil {
+		return err
+	}
+
+	g.SetCurrentView(UrlEndpointView)
 	return nil
 }
 
 func cancelEdit(g *gocui.Gui, v *gocui.View) error {
-	// Remove the floating editor view
-	if err := g.DeleteView(FloatingView); err != nil {
-		return err
-	}
-	// Remove the keybindings for the floating editor view
 	if err := g.DeleteKeybinding(FloatingView, gocui.KeyEnter, gocui.ModNone); err != nil {
 		return err
 	}
@@ -476,7 +468,11 @@ func cancelEdit(g *gocui.Gui, v *gocui.View) error {
 		return err
 	}
 
-	g.SetCurrentView(UrlEndpointView) // Set focus back to the UrlEndpointView
+	if err := g.DeleteView(FloatingView); err != nil {
+		return err
+	}
+
+	g.SetCurrentView(UrlEndpointView)
 	return nil
 }
 
@@ -493,6 +489,22 @@ func nextView(g *gocui.Gui, v *gocui.View) error {
 
 	nextIdx := (currentIdx + 1) % len(AllViews)
 	g.SetCurrentView(AllViews[nextIdx])
+	return nil
+}
+
+func prevView(g *gocui.Gui, v *gocui.View) error {
+	currentView := g.CurrentView().Name()
+
+	currentIdx := -1
+	for i, name := range AllViews {
+		if name == currentView {
+			currentIdx = i
+			break
+		}
+	}
+
+	prevIdx := (currentIdx - 1 + len(AllViews)) % len(AllViews)
+	g.SetCurrentView(AllViews[prevIdx])
 	return nil
 }
 
