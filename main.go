@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/coderj001/lazypost/config"
+	"github.com/coderj001/lazypost/ui"
 	"github.com/jroimartin/gocui"
 )
 
@@ -40,83 +41,8 @@ var (
 	currentMethod = 0
 )
 
-func createUrlEndpointView(g *gocui.Gui, maxX int) error {
-	v, err := g.SetView(UrlEndpointView, 0, 0, maxX-1, 2)
-	if err != nil {
-		if err != gocui.ErrUnknownView {
-			return err
-		}
-		v.Title = "(1) GET"
-		v.Wrap = true
-		v.Autoscroll = false
-		// v.Editable = true
-		// v.Editor = gocui.DefaultEditor
-		v.SelFgColor = gocui.ColorWhite
-		v.BgColor = gocui.ColorCyan
-		fmt.Fprintln(v, defaultURL)
-
-		// Make sure this view is initially focused
-		if _, err := g.SetCurrentView(UrlEndpointView); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func createParamsView(g *gocui.Gui, maxX, maxY int) error {
-	width2 := maxX / 3
-	v, err := g.SetView(ParamsView, 0, 3, width2, maxY)
-	if err != nil {
-		if err != gocui.ErrUnknownView {
-			return err
-		}
-		v.Title = "(2) Params"
-		v.Wrap = true
-		v.Autoscroll = true
-		v.Editable = true
-		v.Editor = gocui.DefaultEditor
-		v.SelFgColor = gocui.ColorWhite
-		fmt.Fprintln(v, "param1=value1\nparam2=value2")
-	}
-	return nil
-}
-
-func createHeadersView(g *gocui.Gui, maxX, maxY int) error {
-	height1 := maxY / 2
-	width2 := maxX / 3
-	v, err := g.SetView(HeadersView, 0, height1, 2*width2-1, maxY-1)
-	if err != nil {
-		if err != gocui.ErrUnknownView {
-			return err
-		}
-		v.Title = "(3) Headers"
-		v.Wrap = true
-		v.Autoscroll = true
-		v.Editable = true
-		v.Editor = gocui.DefaultEditor
-		v.SelFgColor = gocui.ColorWhite
-		fmt.Fprintln(v, "Content-Type=application/json\nAccept=application/json")
-	}
-	return nil
-}
-
-func createResponseBodyView(g *gocui.Gui, maxX, maxY int) error {
-	width2 := maxX / 3
-	v, err := g.SetView(ResponseBodyView, width2, 3, maxX-1, maxY-1)
-	if err != nil {
-		if err != gocui.ErrUnknownView {
-			return err
-		}
-		v.Title = "(4)"
-		v.Wrap = true
-		v.Autoscroll = true
-		v.Editable = false
-		v.Editor = gocui.DefaultEditor
-		v.SelFgColor = gocui.ColorWhite
-		fmt.Fprintln(v, "Response will appear here after sending request")
-	}
-	return nil
-}
+// moved: all create*View logic relocated to ui/layout.go Setup()
+// createFloatingEditorView remains here for floating edit (not regular layout)
 
 func createFloatingEditorView(g *gocui.Gui, maxX, maxY int) (*gocui.View, error) {
 	v, err := g.SetView(FloatingView, maxX/2-20, maxY/2-3, maxX/2+20, maxY/2+3)
@@ -136,31 +62,8 @@ func createFloatingEditorView(g *gocui.Gui, maxX, maxY int) (*gocui.View, error)
 	return v, nil
 }
 
-func layout(g *gocui.Gui) error {
-	maxX, maxY := g.Size()
-
-	// UrlEndpoint view -  top section
-	if err := createUrlEndpointView(g, maxX); err != nil {
-		return err
-	}
-
-	// Parameters view -  middle-left section
-	if err := createParamsView(g, maxX, maxY); err != nil {
-		return err
-	}
-
-	// Headers view - middle section
-	if err := createHeadersView(g, maxX, maxY); err != nil {
-		return err
-	}
-
-	// ResponseBody view - right cover
-	if err := createResponseBodyView(g, maxX, maxY); err != nil {
-		return err
-	}
-
-	return nil
-}
+// Layout logic moved to ui/layout.go
+// func layout(g *gocui.Gui) error {}
 
 func initKeybindings(g *gocui.Gui) error {
 	cfg, err := config.LoadKeybindings()
@@ -524,7 +427,11 @@ func main() {
 	g.Cursor = true
 	g.SelFgColor = gocui.ColorGreen
 
-	g.SetManagerFunc(layout)
+	// Call deep UI Setup instead of SetManagerFunc/layout
+	layout := ui.NewUILayout()
+	if err := layout.Setup(g); err != nil {
+		log.Panicln("UI setup failed:", err)
+	}
 
 	//KeyBinding
 	if err := initKeybindings(g); err != nil {
